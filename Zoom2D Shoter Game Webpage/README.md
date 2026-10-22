@@ -1,5 +1,10 @@
 # Zoom2D Shooter
 
+**Version:** V.2.0
+
+- V.2.0: 600 weapons, 14 medical items (including a self-activating Defibrillator), a Field Hospital, stackable walls, only one Big Henchman at a time
+- V.1.0: the first release (500 weapons)
+
 A 2D side-scrolling shooter that runs in any modern browser. Double-click **index.html** to play. No install needed.
 
 - 600 weapons grouped by type — Semi-Auto, Full-Auto, Manual Action, Machine Guns, Explosives, Melee and Futuristic — and sorted by price, from a $500 pistol to $50,000,000 futuristic gear (laser swords start at $10,000,000)

@@ -1,5 +1,7 @@
 /* Zoom2D Shooter — menus: title, pause, settings, how-to-play, death screen, toasts. */
 (function () {
+  // Game version: the first number goes up with every big update.
+  window.Z.VERSION = 'V.2.0';
   const Z = window.Z;
   const G = () => Z.game;
   const $ = id => document.getElementById(id);
@@ -63,7 +65,7 @@
   function refreshTitle() {
     const has = Z.hasSave();
     $('btn-continue').classList.toggle('hidden', !has);
-    $('stat-line').textContent = Z.WEAPONS.length + ' weapons · ' + Z.BUILD.length + ' base structures · ' + Object.keys(Z.ETYPES).length + ' enemy types · 4 biomes';
+    $('stat-line').textContent = Z.VERSION + ' · ' + Z.WEAPONS.length + ' weapons · ' + Z.BUILD.length + ' base structures · ' + Object.keys(Z.ETYPES).length + ' enemy types · 4 biomes';
   }
 
   function toTitle() {
