@@ -1,8 +1,8 @@
 # Zoom2D Shooter
 
-**Version:** V.2.0
+**Version:** V.1.1
 
-- V.2.0: 600 weapons, 14 medical items (including a self-activating Defibrillator), a Field Hospital, stackable walls, only one Big Henchman at a time
+- V.1.1: 600 weapons, 14 medical items (including a self-activating Defibrillator), a Field Hospital, stackable walls, only one Big Henchman at a time
 - V.1.0: the first release (500 weapons)
 
 A 2D side-scrolling shooter that runs in any modern browser. Double-click **index.html** to play. No install needed.

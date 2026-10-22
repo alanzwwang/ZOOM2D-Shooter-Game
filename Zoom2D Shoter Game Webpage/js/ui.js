@@ -1,7 +1,7 @@
 /* Zoom2D Shooter — menus: title, pause, settings, how-to-play, death screen, toasts. */
 (function () {
-  // Game version: the first number goes up with every big update.
-  window.Z.VERSION = 'V.2.0';
+  // Game version: V.1.0 was the first release; each update adds one to the last number.
+  window.Z.VERSION = 'V.1.1';
   const Z = window.Z;
   const G = () => Z.game;
   const $ = id => document.getElementById(id);
