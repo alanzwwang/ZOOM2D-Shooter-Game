@@ -122,6 +122,7 @@
   }
   function buyMed(id, n, el) {
     const P = G().player, m = Z.MED_BY_ID[id];
+    if (m.max && (P.meds[id] || 0) + n > m.max) { flash('You can carry at most ' + m.max + ' ' + m.name + 's', 'bad'); Z.audio.sfx('deny'); return; }
     if (!pay(m.price * n, el)) return;
     P.meds[id] = (P.meds[id] || 0) + n;
     Z.audio.sfx('buy'); flash('+' + n + ' ' + m.name, 'good'); renderAll();
@@ -220,7 +221,7 @@
       tb.innerHTML =
         '<div class="chips">' + ['All', ...Z.TYPES].map(c => '<button class="chip' + (c === S.cat ? ' on' : '') + '" data-action="cat" data-id="' + c + '" title="' + esc(c === 'All' ? 'Every weapon, grouped by type and sorted by price' : Z.TYPE_INFO[c].desc) + '">' + (c === 'All' ? '★' : TYPE_ICON(c)) + ' ' + c + ' <em>' + (c === 'All' ? Z.WEAPONS.length : counts[c]) + '</em></button>').join('') + '</div>' +
         '<div class="filters">' +
-        '<input id="shop-search" type="search" placeholder="Search 500 weapons… (e.g. Glock, laser, minigun)" value="' + esc(S.q) + '">' +
+        '<input id="shop-search" type="search" placeholder="Search ' + Z.WEAPONS.length + ' weapons… (e.g. Glock, laser, minigun)" value="' + esc(S.q) + '">' +
         '<select id="shop-cls"><option value="all">All classes</option>' + Z.CATEGORIES.map(c => '<option value="' + c + '">' + (CAT_ICON[c] || '') + ' ' + c + '</option>').join('') + '</select>' +
         '<select id="shop-mode"><option value="all">All fire modes</option><option value="semi">Semi-Auto</option><option value="auto">Full-Auto</option><option value="burst">Burst</option><option value="select">Select-fire (switchable)</option><option value="pump">Pump-Action</option><option value="bolt">Bolt-Action</option><option value="break">Break / Lever-Action</option><option value="melee">Melee</option></select>' +
         '<select id="shop-sort"><option value="catalog">Sort: type, then price</option><option value="price-asc">Price: low → high</option><option value="price-desc">Price: high → low</option><option value="dmg">Damage</option><option value="dps">DPS</option><option value="rate">Fire rate</option><option value="name">Name A–Z</option></select>' +
@@ -283,7 +284,7 @@
       if (showHeads && w.type !== S.lastType) {
         S.lastType = w.type;
         const n = list.filter(x => x.type === w.type).length;
-        html += '<div class="type-head"><span>' + TYPE_ICON(w.type) + ' ' + w.type + '</span><small>' + n + ' weapons · ' + esc(Z.TYPE_INFO[w.type].desc) + '</small></div>';
+        html += '<div class="type-head"><span>' + TYPE_ICON(w.type) + ' ' + w.type + '</span><small>' + n + (n === 1 ? ' weapon · ' : ' weapons · ') + esc(Z.TYPE_INFO[w.type].desc) + '</small></div>';
       }
       html += cardHTML(w);
     }
@@ -347,14 +348,21 @@
 
   function renderMedTab() {
     const P = G().player, money = G().money;
-    return '<div class="section-note">Heal anytime with the hotkey shown on each item, or press <kbd>H</kbd> to auto-pick the best one.</div><div class="mini-grid">' + Z.MEDS.map(m =>
-      '<div class="card"><canvas class="ic" data-med="' + m.id + '" width="120" height="90"></canvas><div class="badges"><b class="bg-key">KEY ' + m.key + '</b></div><div class="nm">' + m.name + '</div><div class="desc">' + m.desc + '</div>' +
-      '<div class="meta">You have: <b>' + (P.meds[m.id] || 0) + '</b></div><div class="btn-row"><button class="buy' + (m.price > money ? ' poor' : '') + '" data-action="med" data-id="' + m.id + '" data-n="1">Buy 1 · ' + fmt(m.price) + '</button><button class="buy alt' + (m.price * 5 > money ? ' poor' : '') + '" data-action="med" data-id="' + m.id + '" data-n="5">×5 · ' + fmt(m.price * 5) + '</button></div></div>').join('') + '</div>';
+    return '<div class="section-note">Heal anytime with the hotkey shown on each item, or press <kbd>H</kbd> to auto-pick the best one. The Defibrillator works by itself when you go down.</div><div class="mini-grid">' + Z.MEDS.map(m =>
+      '<div class="card"><canvas class="ic" data-med="' + m.id + '" width="120" height="90"></canvas><div class="badges"><b class="bg-key">' + (m.revive ? 'AUTO' : 'KEY ' + m.key) + '</b></div><div class="nm">' + m.name + '</div><div class="desc">' + m.desc + '</div>' +
+      '<div class="meta">You have: <b>' + (P.meds[m.id] || 0) + '</b>' + (m.max ? ' / ' + m.max : '') + '</div><div class="btn-row">' + medButtons(m, P.meds[m.id] || 0, money) + '</div></div>').join('') + '</div>';
+  }
+  function medButtons(m, have, money) {
+    const left = m.max ? m.max - have : Infinity;
+    if (left <= 0) return '<span class="tagline max">MAX</span>';
+    const many = Math.min(5, left);
+    return '<button class="buy' + (m.price > money ? ' poor' : '') + '" data-action="med" data-id="' + m.id + '" data-n="1">Buy 1 · ' + fmt(m.price) + '</button>' +
+      (many > 1 ? '<button class="buy alt' + (m.price * many > money ? ' poor' : '') + '" data-action="med" data-id="' + m.id + '" data-n="' + many + '">×' + many + ' · ' + fmt(m.price * many) + '</button>' : '');
   }
 
   function renderBuildTab() {
     const g = G(), money = g.money;
-    return '<div class="section-note">Stock up on barricades, traps and turrets, then press <kbd>B</kbd> in-game to place them. In build mode you can also buy-and-place directly, and right-click to sell. Solid walls block enemies and their bullets — your own shots pass through.</div><div class="mini-grid">' + Z.BUILD.map(b =>
+    return '<div class="section-note">Stock up on barricades, traps and turrets, then press <kbd>B</kbd> in-game to place them. In build mode you can also buy-and-place directly, and right-click to sell. Solid walls block enemies and their bullets — your own shots pass through. Build a wall on the same kind of wall to stack it taller, and put turrets on top of walls.</div><div class="mini-grid">' + Z.BUILD.map(b =>
       '<div class="card"><canvas class="ic" data-build="' + b.id + '" width="120" height="90"></canvas><div class="badges">' + (b.turret ? '<b class="bg-tac">TURRET</b>' : b.solid ? '<b class="bg-key">WALL</b>' : '<b class="bg-up">TRAP/UTILITY</b>') + '</div><div class="nm">' + b.name + '</div><div class="desc">' + b.desc + '</div>' +
       '<div class="meta">HP ' + Math.round(b.hp * (1 + 0.2 * g.perk('builder'))).toLocaleString() + (b.turret ? ' · ' + b.turret.dmg + ' dmg × ' + b.turret.rate + '/s · range ' + b.turret.range : '') + ' · In stock: <b>' + (g.buildInv[b.id] || 0) + '</b></div>' +
       '<div class="btn-row"><button class="buy' + (b.price > money ? ' poor' : '') + '" data-action="build" data-id="' + b.id + '" data-n="1">Buy 1 · ' + fmt(b.price) + '</button><button class="buy alt' + (b.price * 5 > money ? ' poor' : '') + '" data-action="build" data-id="' + b.id + '" data-n="5">×5 · ' + fmt(b.price * 5) + '</button></div></div>').join('') + '</div>';

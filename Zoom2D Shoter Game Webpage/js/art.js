@@ -40,7 +40,7 @@
   }
 
   // ---- weapon palettes ------------------------------------------------------
-  // Every model gets its own finish and kit, derived from a hash of its id, so 500 guns
+  // Every model gets its own finish and kit, derived from a hash of its id, so 600 guns
   // built on ~25 base silhouettes still look distinct (barrel length, optic, mag, muzzle, grip, colours).
   const FINISH = [
     ['#2c2f36', '#16181c', '#5b616b'], // black
@@ -748,15 +748,36 @@
       ctx.fillStyle = '#ff9b1f'; rr(ctx, -8, -10, 16, 22, 3); ctx.fill();
       ctx.fillStyle = '#fff'; ctx.fillRect(-9, -14, 18, 6);
       ctx.fillStyle = '#fff'; ctx.fillRect(-5, -2, 10, 8);
-    } else if (m.id === 'adrenaline' || m.id === 'nano-med') {
+    } else if (m.id === 'adrenaline' || m.id === 'nano-med' || m.id === 'morphine' || m.id === 'combat-stim') {
       ctx.rotate(-0.7);
       ctx.fillStyle = '#ddd'; ctx.fillRect(-14, -4, 22, 8);
       ctx.fillStyle = m.color; ctx.fillRect(-12, -3, 16, 6);
       ctx.fillStyle = '#999'; ctx.fillRect(8, -1, 10, 2); ctx.fillRect(-18, -6, 4, 12);
+      if (m.id === 'combat-stim') { ctx.fillStyle = '#ffd84d'; ctx.fillRect(-6, -6, 3, 12); }
+    } else if (m.id === 'energy-bar') {
+      ctx.rotate(-0.25);
+      ctx.fillStyle = '#2a7bd4'; rr(ctx, -15, -7, 30, 14, 3); ctx.fill();
+      ctx.fillStyle = m.color; ctx.fillRect(4, -7, 11, 14);
+      ctx.fillStyle = '#ffd84d'; ctx.fillRect(-11, -2, 12, 4);
+    } else if (m.id === 'splint') {
+      ctx.fillStyle = m.color; rr(ctx, -6, -15, 12, 30, 4); ctx.fill();
+      ctx.fillStyle = '#8a3f12'; for (let i = -9; i <= 9; i += 6) ctx.fillRect(-6, i, 12, 2);
+      ctx.fillStyle = '#f2f2f2'; ctx.fillRect(-9, -4, 18, 7);
+    } else if (m.id === 'blood-bag') {
+      ctx.fillStyle = '#e8eef2'; rr(ctx, -11, -14, 22, 24, 5); ctx.fill();
+      ctx.fillStyle = m.color; rr(ctx, -9, -6, 18, 14, 4); ctx.fill();
+      ctx.fillStyle = '#999'; ctx.fillRect(-1.5, 10, 3, 6);
+      ctx.fillStyle = '#fff'; ctx.fillRect(-5, -11, 10, 3);
+    } else if (m.id === 'defibrillator') {
+      ctx.fillStyle = '#5a616c'; rr(ctx, -15, -11, 30, 22, 4); ctx.fill();
+      ctx.strokeStyle = '#c9ced6'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.fillStyle = m.color;
+      ctx.beginPath(); ctx.moveTo(2, -9); ctx.lineTo(-6, 1); ctx.lineTo(0, 1); ctx.lineTo(-3, 9); ctx.lineTo(7, -2); ctx.lineTo(1, -2); ctx.closePath(); ctx.fill();
     } else {
       const big = m.id === 'trauma-kit' ? 1.1 : m.id === 'medkit' ? 1 : 0.9;
       ctx.scale(big, big);
-      ctx.fillStyle = m.id === 'trauma-kit' ? '#2a2a2a' : '#f4f4f4'; rr(ctx, -14, -10, 28, 22, 4); ctx.fill();
+      ctx.fillStyle = m.id === 'trauma-kit' ? '#3a3a3a' : '#f4f4f4'; rr(ctx, -14, -10, 28, 22, 4); ctx.fill();
+      if (m.id === 'trauma-kit') { ctx.strokeStyle = '#9aa0aa'; ctx.lineWidth = 1.5; ctx.stroke(); }
       ctx.fillStyle = '#555'; ctx.fillRect(-5, -14, 10, 4);
       ctx.fillStyle = m.color; ctx.fillRect(-3, -6, 6, 14); ctx.fillRect(-7, -2, 14, 6);
     }

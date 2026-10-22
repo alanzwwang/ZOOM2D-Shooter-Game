@@ -2,9 +2,9 @@
 
 A 2D side-scrolling shooter that runs in any modern browser. Double-click **index.html** to play. No install needed.
 
-- 500 weapons grouped by type — Semi-Auto, Full-Auto, Manual Action, Machine Guns, Explosives, Melee and Futuristic — and sorted by price, from a $500 pistol to $50,000,000 futuristic gear (laser swords start at $10,000,000)
-- A deliberately grindy economy: weapon upgrades (5 tracks × 5 levels), armor, medical supplies, training perks, and income buildings (Money Printer, Gold Printer, Crypto Mining Rig)
-- Base building: walls, traps, turrets, med stations and money printers
+- 600 weapons grouped by type — Semi-Auto, Full-Auto, Manual Action, Machine Guns, Explosives, Melee and Futuristic — and sorted by price, from a $500 pistol to $50,000,000 futuristic gear (laser swords start at $10,000,000)
+- A deliberately grindy economy: weapon upgrades (5 tracks × 5 levels), armor, 14 medical supplies (including a self-activating Defibrillator), training perks, and income buildings (Money Printer, Gold Printer, Crypto Mining Rig)
+- Base building: walls, traps, turrets, med stations, a Field Hospital and money printers — stack walls into taller walls and put turrets on top
 - Destructible terrain across 4 biomes, enemies that scale from clueless Dimwits to minigun Boss Brutes, and raids every few minutes
 - Procedural battle music that gets more intense as fights heat up
 - Auto dynamic resolution (keeps it smooth on big or high-DPI screens), plus manual resolution scale (50–200%), HiDPI, quality presets and HUD size in Settings

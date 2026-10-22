@@ -369,6 +369,124 @@
     ]
   };
 
+  // ---- Armory expansion: 92 more models (+8 golden editions) take the arsenal to 600 ----------
+  // They never get Tactical editions, so the original Tactical line-up (and everyone's saves) stays put.
+  const MORE = {
+    Pistols: [
+      ['Glock 45', 1.6, { mag: 17, desc: 'Crossover Glock: full grip, compact slide.' }],
+      ['SIG P229', 1.8, { mag: 13, spread: 0.026 }],
+      ['Walther PDP', 1.9, { mag: 18, rate: 4.6 }],
+      ['H&K P30', 1.9, { mag: 15 }],
+      ['Beretta PX4 Storm', 1.8, { mag: 17 }],
+      ['FN FNX-45', 2.2, { dmg: 19, mag: 15 }],
+      ['Ruger GP100', 2.4, { shape: 'revolver', dmg: 32, mag: 6, rate: 2.6, reload: 2.2, sound: 'magnum' }],
+      ['S&W Model 29', 3.1, { shape: 'revolver', dmg: 44, mag: 6, rate: 2.2, reload: 2.3, recoil: 0.3, sound: 'magnum', desc: '.44 Magnum. Feeling lucky?' }],
+      ['Wildey .475', 3.6, { g: 1, dmg: 48, mag: 7, rate: 2, recoil: 0.36, sound: 'magnum', desc: 'Gas-operated hand cannon.' }],
+      ['Mauser M712 Schnellfeuer', 2.6, { auto: true, rate: 15, mag: 20, spread: 0.08, desc: 'Full-auto broomhandle. Wild.' }]
+    ],
+    SMGs: [
+      ['Sten Mk V', 1.0, { rate: 9, mag: 32 }],
+      ['PPS-43', 1.1, { rate: 11, mag: 35 }],
+      ['PP-91 Kedr', 1.3, { rate: 14, mag: 30 }],
+      ['Suomi KP/-31', 1.4, { g: 1, rate: 15, mag: 50, desc: 'Finnish drum-fed classic.' }],
+      ['Colt 9mm SMG', 1.5, { rate: 13, mag: 32 }],
+      ['CMMG Banshee', 1.6, {}],
+      ['Uzi Pro', 1.6, { rate: 13, mag: 25 }],
+      ['Daewoo K7', 1.6, { mag: 30, sound: 'suppressed', desc: 'Built-in suppressor. Whisper quiet.' }],
+      ['B&T APC9', 2.0, { rate: 15, mag: 30 }]
+    ],
+    Rifles: [
+      ['Howa Type 89', 1.5, {}],
+      ['Vektor R4', 1.5, {}],
+      ['Colt Canada C7', 1.6, { desc: 'Canadian service rifle. Hold the trigger for full-auto fire.' }],
+      ['AK-74M', 1.4, {}],
+      ['AK-104', 1.5, { dmg: 21 }],
+      ['H&K G36K', 1.7, { rate: 12 }],
+      ['SIG 516', 1.8, {}],
+      ['IWI ARAD', 2.0, {}],
+      ['SIG SG 510', 2.0, { dmg: 28, rate: 7 }],
+      ['Steyr AUG HBAR', 2.0, { shape: 'bullpup', mag: 42 }],
+      ['H&K XM8', 2.2, { g: 1, rate: 12, spread: 0.028, desc: 'Sleek prototype from the future that never came.' }],
+      ['Desert Tech MDR', 2.4, { shape: 'bullpup', dmg: 26, rate: 9 }]
+    ],
+    Shotguns: [
+      ['Stoeger Coach Gun', 1.1, { mode: 'break', mag: 2, rate: 3, reload: 2.0, desc: 'Two barrels, two big booms.' }],
+      ['Browning BPS', 1.3, {}],
+      ['Winchester Model 12', 1.4, { mode: 'pump', desc: 'The "Perfect Repeater" pump gun.' }],
+      ['Remington 11-87', 1.5, { mode: 'semi', rate: 2.8 }],
+      ['Benelli M3 Super 90', 1.6, {}],
+      ['Beretta 686 Silver Pigeon', 1.6, { g: 1, mode: 'break', mag: 2, rate: 3, reload: 2.0, desc: 'A fancy over-under for gentleman hunters.' }],
+      ['Mossberg 930 SPX', 1.7, { mode: 'semi', rate: 3, desc: 'Semi-auto tactical shotgun.' }],
+      ['Akdal MKA 1919', 1.9, { mode: 'semi', rate: 3.2, mag: 8 }]
+    ],
+    Snipers: [
+      ['Henry Big Boy', 0.9, { mode: 'lever', rate: 1.8, mag: 10, dmg: 55, sound: 'magnum', desc: 'Lever-action cowboy rifle.' }],
+      ['Springfield M1A', 1.4, { mode: 'semi', rate: 3.5, mag: 20, dmg: 52, sound: 'rifle' }],
+      ['M40A1', 1.5, {}],
+      ['SVU-AS', 2.2, { rate: 2.4, mag: 10, dmg: 66 }],
+      ['Sako TRG-22', 2.3, {}],
+      ['Remington MSR', 2.5, {}],
+      ['Barrett MRAD', 2.9, { dmg: 150, pierce: 2 }],
+      ['Accuracy Intl AW50', 3.4, { g: 1, dmg: 180, pierce: 2, mag: 5, desc: '.50 cal precision from Britain.' }],
+      ['Lobaev SVLK-14S', 4.0, { dmg: 240, pierce: 3, mag: 1, rate: 0.7, desc: 'Record-breaking extreme range rifle.' }]
+    ],
+    Heavy: [
+      ['RPD', 1.2, { mag: 100, rate: 11 }],
+      ['M1919 Browning', 1.3, { rate: 8, dmg: 21 }],
+      ['FN Minimi Mk3', 1.3, {}],
+      ['Vickers Gun', 1.4, { g: 1, rate: 8, mag: 250, moveMul: 0.75, desc: 'Water-cooled WWI legend.' }],
+      ['Type 80 GPMG', 1.6, { dmg: 21 }],
+      ['M60E4', 1.9, { dmg: 22, rate: 10 }],
+      ['Thermite Projector', 3.5, { kind: 'flame', shape: 'flamer', dmg: 12, rate: 30, mag: 280, burn: 7, range: 480, speed: 880, spread: 0.1, color: '#ffd23a', sound: 'flame', desc: 'Burns white-hot.' }]
+    ],
+    Miniguns: [
+      ['Mini Gatling', 0.9, { rate: 24, dmg: 13, moveMul: 0.78 }],
+      ['XM214 Microgun', 1.2, { rate: 26, dmg: 12 }],
+      ['GShG-7.62', 1.6, { rate: 34, dmg: 12, spread: 0.11 }],
+      ['Flame Gatling', 1.9, { kind: 'flame', dmg: 13, rate: 34, mag: 400, burn: 4, range: 440, speed: 900, spread: 0.12, color: '#ff6a1a', sound: 'flame', desc: 'Six barrels of fire.' }],
+      ['Ice Gatling', 1.4, { kind: 'flame', dmg: 8, rate: 30, mag: 360, freeze: 1, range: 400, speed: 800, spread: 0.12, color: '#7fe8ff', sound: 'flame', desc: 'Freezes everything in front of you.' }]
+    ],
+    Explosives: [
+      ['Bazooka M9', 0.8, { dmg: 110, speed: 950 }],
+      ['RGM-40 Kastet', 1.0, { kind: 'grenade', shape: 'tube', mag: 1, rate: 1.4, speed: 1040, radius: 115, sound: 'thump' }],
+      ['Type 69 RPG', 1.1, {}],
+      ['M320 Launcher', 1.2, { kind: 'grenade', shape: 'tube', mag: 1, rate: 1.5, speed: 1080, radius: 120, sound: 'thump' }],
+      ['Firework Launcher', 1.4, { cluster: 1, dmg: 70, radius: 110, desc: 'Every shot is a celebration.' }],
+      ['RPG-32 Hashim', 1.6, { dmg: 165 }],
+      ['GM-94', 1.7, { kind: 'grenade', shape: 'tube', mag: 3, rate: 2, speed: 1080, radius: 125, sound: 'thump', desc: 'Pump-action grenade launcher.' }],
+      ['NLAW', 2.0, { homing: 1, dmg: 180, speed: 1000, desc: 'Fire-and-forget guided missile.' }]
+    ],
+    Energy: [
+      ['Ion Pistol', 1.0, { kind: 'plasma', shape: 'ePistol', auto: false, rate: 5, dmg: 30, speed: 1700, radius: 18, mag: 18, color: '#55aaff', sound: 'plasma' }],
+      ['Laser Carbine', 1.2, { shape: 'eRifle', rate: 8, mag: 50, dmg: 22, color: '#ff5a2b' }],
+      ['Sun Pistol', 1.6, { kind: 'plasma', shape: 'ePistol', auto: false, rate: 3.5, dmg: 48, speed: 1500, radius: 40, mag: 14, color: '#ffb02b', sound: 'plasma', desc: 'A tiny star in your hand.' }],
+      ['Dual Laser Pistols', 1.8, { shape: 'ePistol', pellets: 2, spread: 0.05, rate: 6, mag: 40, dmg: 20, color: '#33c3ff', desc: 'One in each hand.' }],
+      ['Nova Blaster', 2.0, { kind: 'plasma', shape: 'eRifle', rate: 7, dmg: 34, speed: 1600, radius: 34, mag: 40, color: '#ff4dc4', sound: 'plasma' }],
+      ['Plasma Repeater', 2.2, { kind: 'plasma', shape: 'eRifle', rate: 12, dmg: 22, speed: 1800, radius: 22, mag: 60, color: '#4cff7a', sound: 'plasma' }],
+      ['Cryo Lance', 2.4, { kind: 'rail', shape: 'eRifle', auto: false, rate: 1.2, dmg: 180, mag: 6, range: 2600, freeze: 1, color: '#9ff3ff', sound: 'rail', desc: 'Pierces a whole line and freezes it.' }],
+      ['Heat Ray', 2.8, { shape: 'eHeavy', rate: 18, dmg: 12, range: 700, mag: 180, burn: 3, color: '#ff6a1a', desc: 'Sets everything ablaze.' }],
+      ['Storm Caller', 3.0, { kind: 'tesla', shape: 'eHeavy', rate: 5, dmg: 50, range: 700, mag: 40, color: '#b6e3ff', sound: 'zap', desc: 'A bottled thunderstorm.' }],
+      ['Photon Sniper', 3.4, { kind: 'rail', shape: 'eRifle', auto: false, rate: 0.8, dmg: 340, mag: 4, range: 3400, color: '#ffffff', sound: 'rail', recoil: 0.5, desc: 'Light-speed headshots.' }],
+      ['Graviton Cannon', 4.2, { kind: 'plasma', shape: 'eHeavy', auto: false, rate: 0.8, dmg: 380, speed: 900, radius: 220, mag: 4, color: '#5a7bff', sound: 'plasma', desc: 'Crushes enemies with gravity.' }],
+      ['Omega Beam', 4.8, { g: 1, shape: 'eHeavy', rate: 16, dmg: 30, mag: 160, color: '#ff2bd6', desc: 'The final laser.' }]
+    ],
+    Melee: [
+      ['Bowie Knife', 1.2, { rate: 3, dmg: 32, desc: 'Big knife energy.' }],
+      ['Nunchucks', 1.3, { shape: 'blunt', dmg: 26, rate: 4, range: 80, color: '#a0703a', desc: 'Whirling and fast.' }],
+      ['Cricket Bat', 1.4, { shape: 'blunt', dmg: 42, rate: 1.8, range: 88, knock: 1, color: '#d9b98a' }],
+      ['Tactical Tomahawk', 1.6, { shape: 'axe', dmg: 48, rate: 2, range: 80 }],
+      ['Pickaxe', 1.9, { shape: 'axe', dmg: 58, rate: 1.4, range: 90, desc: 'Mine your way through enemies.' }],
+      ['Rapier', 2.2, { shape: 'blade', dmg: 40, rate: 3.6, range: 100, arc: 0.8, desc: 'En garde!' }],
+      ['Longsword', 2.5, { g: 1, shape: 'blade', dmg: 62, rate: 1.8, range: 105, desc: 'A knight\'s blade.' }],
+      ['Trident', 2.6, { shape: 'spear', dmg: 70, range: 140, arc: 0.7 }],
+      ['Battle Axe', 2.8, { shape: 'axe', dmg: 80, rate: 1.2, range: 100 }],
+      ['War Hammer', 2.9, { shape: 'hammer', dmg: 95, rate: 1, range: 95, knock: 1 }],
+      ['Inferno Blade', 4.4, { shape: 'blade', dmg: 90, rate: 3, range: 100, color: '#ff6a1a', glow: 1, burn: 3, sound: 'saber', desc: 'A blade wreathed in fire.' }],
+      ['Laser Sword (Orange)', 4.9, { shape: 'lsword', dmg: 108, rate: 3.2, range: 118, color: '#ff8a1f', deflect: 1, sound: 'saber', desc: 'Deflects bullets back at enemies!' }]
+    ]
+  };
+  for (const cat of Object.keys(MORE)) for (const [name, power, o] of MORE[cat]) LIST[cat].push([name, power, Object.assign({ noTac: 1 }, o)]);
+
   // ---- Build -------------------------------------------------------------
   function nicePrice(p) {
     if (p < 100) return Math.round(p / 5) * 5;
@@ -442,11 +560,11 @@
       e.name = 'Golden ' + base.name; e.id = 'golden-' + base.id; e.gold = true;
       e.dmg = Math.round(base.dmg * 1.3 * 10) / 10;
       e.rate = Math.round(base.rate * 1.08 * 100) / 100;
-      if (base.mag) e.mag = Math.round(base.mag * 1.25);
+      if (base.mag && base.mode !== 'break') e.mag = Math.round(base.mag * 1.25);
       e.reload = base.reload * 0.85; e.spread = base.spread * 0.85;
       e.price = nicePrice(base.price * 3.2);
       e.tier = Math.min(5, base.tier + 1);
-      e.desc = '24-karat edition: +30% damage, bigger mags. ' + (base.desc || '');
+      e.desc = '24-karat edition: +30% damage' + (base.mode === 'break' ? '' : ', bigger mags') + '. ' + (base.desc || '');
     } else {
       e.name = base.name + ' Tactical'; e.id = base.id + '-tactical'; e.tactical = true;
       e.spread = base.spread * 0.7; e.recoil = base.recoil * 0.75;
@@ -498,11 +616,11 @@
 
   const bases = weapons.slice();
   for (const b of bases) if (b.flags.g) weapons.push(edition(b, 'golden'));
-  // Tactical editions fill the arsenal to exactly 500 — highest-power real firearms first.
+  // Tactical editions fill the arsenal to exactly 600 — highest-power real firearms first.
   const TAC_CATS = ['Pistols', 'SMGs', 'Rifles', 'Shotguns', 'Snipers', 'Heavy'];
   const tacPool = bases.filter(b => TAC_CATS.includes(b.cat) && b.kind === 'bullet' && !b.flags.noTac)
     .sort((a, b) => b.power - a.power || a.name.localeCompare(b.name));
-  const need = Math.max(0, 500 - weapons.length);
+  const need = Math.max(0, 600 - weapons.length);
   weapons.push(...tacPool.slice(0, need).map(b => edition(b, 'tactical')));
 
   // ---- value-based pricing ------------------------------------------------------------------
@@ -636,6 +754,7 @@
     { id: 'jersey', name: 'Concrete Barrier', w: 84, h: 70, hp: 3200, price: 2200, solid: true, desc: 'Heavy jersey barrier.' },
     { id: 'watchtower', name: 'Watchtower', w: 96, h: 150, hp: 1800, price: 4000, solid: true, tower: true, desc: 'High ground! Climb up and snipe.' },
     { id: 'med-station', name: 'Med Station', w: 44, h: 62, hp: 600, price: 5000, solid: false, heal: 6, radius: 170, desc: 'Heals you 6 HP/s while you stand nearby.' },
+    { id: 'field-hospital', name: 'Field Hospital', w: 90, h: 76, hp: 2400, price: 20000, solid: false, heal: 14, radius: 260, desc: 'Big medical tent. Heals you 14 HP/s in a wide area.' },
     { id: 'sentry', name: 'Sentry Gun', w: 42, h: 58, hp: 700, price: 6000, solid: false, turret: { kind: 'bullet', dmg: 11, rate: 6, range: 950, spread: 0.05, speed: 2300, sound: 'rifle' }, desc: 'Auto-turret that shoots the nearest enemy.' },
     { id: 'bunker', name: 'Bunker Wall', w: 32, h: 142, hp: 6500, price: 6500, solid: true, desc: 'Reinforced concrete and rebar.' },
     { id: 'cash-printer', name: 'Money Printer', w: 46, h: 46, hp: 500, price: 9000, solid: false, income: 120, every: 10, desc: 'Prints $120 every 10 seconds. Protect it!' },
@@ -644,10 +763,14 @@
     { id: 'heavy-sentry', name: 'Minigun Sentry', w: 52, h: 66, hp: 1400, price: 22000, solid: false, turret: { kind: 'bullet', dmg: 10, rate: 18, range: 1050, spread: 0.08, speed: 2300, sound: 'minigun' }, desc: 'Shreds anything in range.' },
     { id: 'blast-wall', name: 'Titanium Blast Wall', w: 32, h: 160, hp: 16000, price: 25000, solid: true, desc: 'Practically indestructible.' },
     { id: 'rocket-sentry', name: 'Rocket Turret', w: 52, h: 62, hp: 1200, price: 30000, solid: false, turret: { kind: 'rocket', dmg: 120, rate: 0.7, range: 1300, spread: 0.02, speed: 900, radius: 120, sound: 'rocket' }, desc: 'Fires homing rockets.' },
-    { id: 'energy-shield', name: 'Energy Shield', w: 18, h: 156, hp: 5000, price: 32000, solid: true, regen: 80, shield: true, desc: 'Regenerates 80 HP/s. Glows!' },
+    { id: 'energy-shield', name: 'Energy Shield', w: 18, h: 156, hp: 5000, price: 32000, solid: true, regen: 80, shield: true, desc: 'Regenerates 80 HP/s per block. Glows!' },
     { id: 'tesla-tower', name: 'Tesla Tower', w: 40, h: 96, hp: 1500, price: 38000, solid: false, turret: { kind: 'tesla', dmg: 45, rate: 2, range: 460, color: '#9fd8ff', sound: 'zap' }, desc: 'Chain lightning zaps groups of enemies.' },
     { id: 'laser-sentry', name: 'Laser Turret', w: 46, h: 64, hp: 1600, price: 45000, solid: false, turret: { kind: 'laser', dmg: 34, rate: 5, range: 1400, spread: 0.01, color: '#ff2b4a', sound: 'laser' }, desc: 'Pinpoint lasers at long range.' }
   ];
+  // Solid blocks of the same kind can be stacked: they merge into one taller, seamless structure.
+  for (const b of Z.BUILD) if (b.solid && !b.tower) b.stack = true;
+  // Never let a stack grow taller than this (pixels above the ground).
+  Z.MAX_STACK_H = 420;
   for (const b of Z.BUILD) b.price = nicePrice(b.price * PRICE_MUL);
   Z.BUILD_BY_ID = Object.fromEntries(Z.BUILD.map(b => [b.id, b]));
 
@@ -677,7 +800,13 @@
     { id: 'medkit', key: 'G', name: 'Medkit', heal: 80, time: 2.5, price: 520, color: '#ff2b2b', desc: '+80 HP over 2.5s.' },
     { id: 'adrenaline', key: 'T', name: 'Adrenaline Shot', heal: 30, time: 0.2, price: 400, color: '#4cd4ff', speed: 1.35, speedTime: 8, desc: '+30 HP instantly and 35% speed for 8s.' },
     { id: 'trauma-kit', key: 'Y', name: 'Trauma Kit', heal: 999, time: 3, price: 1300, color: '#c81e1e', desc: 'Full heal over 3s.' },
-    { id: 'nano-med', key: 'U', name: 'Nano-Med Injector', heal: 999, time: 0.5, price: 3200, color: '#3aff9b', regen: 8, regenTime: 15, desc: 'Instant full heal + regeneration for 15s.' }
+    { id: 'nano-med', key: 'U', name: 'Nano-Med Injector', heal: 999, time: 0.5, price: 3200, color: '#3aff9b', regen: 8, regenTime: 15, desc: 'Instant full heal + regeneration for 15s.' },
+    { id: 'energy-bar', key: 'J', name: 'Energy Bar', heal: 10, time: 0.2, price: 60, color: '#c8873a', regen: 1.5, regenTime: 20, desc: '+10 HP and +1.5 HP/s for 20s. Tasty!' },
+    { id: 'splint', key: 'K', name: 'SAM Splint', heal: 35, time: 2, price: 150, color: '#ff8a3a', desc: '+35 HP over 2s.' },
+    { id: 'morphine', key: 'L', name: 'Morphine Syringe', heal: 40, time: 1, price: 450, color: '#b9a6ff', resist: 0.4, resistTime: 6, desc: '+40 HP and 40% less damage for 6s.' },
+    { id: 'combat-stim', key: 'I', name: 'Combat Stim', heal: 25, time: 0.2, price: 700, color: '#ff4dc4', dmgBoost: 1.25, dmgTime: 10, desc: '+25 HP instantly and +25% weapon damage for 10s.' },
+    { id: 'blood-bag', key: 'O', name: 'Blood Bag', heal: 150, time: 8, price: 900, color: '#a3001b', desc: '+150 HP slowly over 8s. Great after a big fight.' },
+    { id: 'defibrillator', key: 'P', name: 'Defibrillator', heal: 0, time: 0, price: 2500, color: '#ffd84d', revive: 0.6, max: 3, desc: 'Works by itself: when you go down, it shocks you back up with 60% HP. Carry up to 3.' }
   ];
 
   for (const a of armor) a.price = nicePrice(a.price * PRICE_MUL);

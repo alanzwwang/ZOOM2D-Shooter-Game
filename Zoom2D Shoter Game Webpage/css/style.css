@@ -160,8 +160,8 @@ input[type=range] { accent-color: var(--gold); }
 .buy.poor { background: linear-gradient(180deg, #5a5f70, #3a3e4c); color: #c8cad8; box-shadow: none; }
 .buy.sm { padding: 6px 10px; font-size: 13px; margin: 0; }
 .buy.wide { width: 100%; font-size: 17px; padding: 12px; margin-top: 12px; }
-.btn-row { display: flex; gap: 6px; margin-top: auto; }
-.btn-row .buy { flex: 1; font-size: 13px; padding: 8px 6px; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; }
+.btn-row .buy { flex: 1 1 auto; white-space: nowrap; font-size: 13px; padding: 8px 6px; }
 .tagline { display: inline-block; font: 800 11px var(--body); letter-spacing: 1px; padding: 6px 10px; border-radius: 8px; text-align: center; margin-top: auto; }
 .tagline.eq { background: rgba(93,255,138,0.15); color: var(--green); border: 1px solid rgba(93,255,138,0.4); }
 .tagline.max { background: rgba(255,216,77,0.15); color: var(--gold2); border: 1px solid rgba(255,216,77,0.4); }

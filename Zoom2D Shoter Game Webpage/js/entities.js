@@ -72,7 +72,7 @@
   Z.supportBlocked = function (e, dx) {
     const nx = e.x + dx, T = G().terrain;
     if (e.y - T.heightAt(nx) > (e.stepMax || 26)) return true;
-    for (const b of G().solids) if (Math.abs(nx - b.x) < b.w / 2 + 11 * (e.s || 1) && e.y > b.top + 8) return true;
+    for (const b of G().solids) if (Math.abs(nx - b.x) < b.w / 2 + 11 * (e.s || 1) && e.y > b.top + 8 && e.y - 62 * (e.s || 1) < b.base) return true;
     return false;
   };
 
@@ -96,7 +96,7 @@
         else nx = (e.x - l < r - e.x) ? l - 0.5 : r + 0.5;
         continue;
       }
-      if (nx > l && nx < r && e.y > b.top + 8) {
+      if (nx > l && nx < r && e.y > b.top + 8 && e.y - 62 * (e.s || 1) < b.base) {
         if (e.y - b.top <= stepMax && e.onGround) { e.y = b.top; continue; }
         nx = e.x < b.x ? Math.min(nx, l) : Math.max(nx, r); e.vx = 0; e.blockedBy = b; e.wallDir = e.x < b.x ? 1 : -1;
       }
@@ -134,10 +134,10 @@
       this.bloom = 0; this.swingT = 0; this.swingDur = 0.28; this.swingHit = new Set();
       this.body = null; this.head = null; this.bodyDur = 0; this.headDur = 0;
       this.meds = { gauze: 5, bandage: 2, 'first-aid': 1 };
-      this.heals = []; this.resistT = 0; this.resist = 0; this.speedT = 0; this.speedMul = 1; this.regenT = 0; this.regen = 0;
+      this.heals = []; this.resistT = 0; this.resist = 0; this.speedT = 0; this.speedMul = 1; this.regenT = 0; this.regen = 0; this.dmgT = 0; this.dmgMul = 1;
       this.invuln = 2; this.flash = 0; this.hurtT = 0; this.dead = false; this.deadT = 0; this.wasDown = false;
       this.stepMax = 26;
-      this.upg = {}; this.eff = {}; this.modeSel = {}; this.lastSlot = 1;
+      this.upg = {}; this.eff = {}; this.effB = {}; this.modeSel = {}; this.lastSlot = 1;
       this.climb = 0; this.deflectE = 100; this.autoReloadT = 0; this.lastHitBy = null; this.stepT = 0; this.wallJumpCD = 0;
       this.onLand = (v) => { Z.audio.sfx('land', 0.6); fx.smoke(this.x, this.y - 2, 4, 8, '150,130,110', -10); };
     }
@@ -147,14 +147,21 @@
       const b = this.baseWeapon; if (!b) return null;
       let c = this.eff[b.id];
       if (!c) {
-        c = this.eff[b.id] = Z.applyUpgrades(b, this.upg[b.id]);
+        // always a copy: perk bonuses must never be written into the shared catalog entry
+        c = this.eff[b.id] = Object.assign({}, Z.applyUpgrades(b, this.upg[b.id]));
         const hands = G().perk('hands');
         if (c.reload) c.reload *= 1 - 0.08 * hands;
         c.dmg *= 1 + 0.05 * G().perk('gunslinger');
       }
+      // Combat Stim: a boosted copy of the same weapon while the stim lasts
+      if (this.dmgT > 0) {
+        let cb = this.effB[b.id];
+        if (!cb || cb.base !== c) cb = this.effB[b.id] = Object.assign({}, c, { dmg: c.dmg * this.dmgMul, base: c });
+        return cb;
+      }
       return c;
     }
-    invalidate() { this.eff = {}; this.maxHp = 100 + 20 * G().perk('vitality'); }
+    invalidate() { this.eff = {}; this.effB = {}; this.maxHp = 100 + 20 * G().perk('vitality'); }
     modeOf(w) { return w.modes[(this.modeSel[w.id] || 0) % w.modes.length]; }
     toggleMode() {
       const w = this.weapon; if (!w || w.modes.length < 2) { if (w) fx.text(this.x, this.y - 90, Z.MODE_LABEL[w.mode] + ' only', '#9fd8ff', 15); return; }
@@ -220,7 +227,21 @@
       if (srcX != null) g.dmgDirs.push({ a: Math.atan2(-30, srcX - this.x), life: 1 });
       Z.audio.sfx('hurt', 0.8);
       fx.blood(this.x, this.y - 40, Math.sign(this.x - (srcX || this.x)) || 1, 4);
-      if (this.hp <= 0) { this.hp = 0; this.die(); }
+      if (this.hp <= 0) {
+        if (this.meds.defibrillator > 0) this.revive();
+        else { this.hp = 0; this.die(); }
+      }
+    }
+    // Defibrillator: instead of going down, get shocked back up
+    revive() {
+      const m = Z.MED_BY_ID.defibrillator;
+      this.meds.defibrillator--;
+      this.hp = Math.max(1, Math.round(this.maxHp * m.revive));
+      this.heals = []; this.invuln = 2.5; this.hurtT = 0;
+      const g = G(); g.hurtFlash = 0; g.shake(10);
+      fx.text(this.x, this.y - 110, '⚡ DEFIBRILLATOR! Back in the fight', '#ffd84d', 22, 2);
+      Z.audio.sfx('zap'); Z.audio.sfx('heal');
+      for (let i = 0; i < 18; i++) fx.add({ t: 'spark', x: this.x + rand(-18, 18), y: this.y - rand(10, 70), vx: rand(-160, 160), vy: -rand(60, 220), life: 0.6, size: 2.6, color: i % 2 ? '#ffd84d' : '#9fd8ff', g: 0, drag: 0, add: true });
     }
     die() {
       this.dead = true; this.deadT = 0;
@@ -230,26 +251,42 @@
     }
     useMed(id) {
       const m = Z.MED_BY_ID[id];
-      if (!m || !this.meds[id] || this.dead) { if (m) { fx.text(this.x, this.y - 90, 'No ' + m.name + '!', '#ff6a6a', 16); Z.audio.sfx('deny'); } return false; }
-      if (this.hp >= this.maxHp && !m.speed && !m.resist) { fx.text(this.x, this.y - 90, 'Already full HP', '#9fd8ff', 16); return false; }
+      if (this.dead) return false;
+      if (!m || !this.meds[id]) { if (m) { fx.text(this.x, this.y - 90, 'No ' + m.name + '!', '#ff6a6a', 16); Z.audio.sfx('deny'); } return false; }
+      if (m.revive) { fx.text(this.x, this.y - 90, 'Defibrillator ready — it works by itself when you go down', '#ffd84d', 16, 1.6); return false; }
+      if (this.hp >= this.maxHp && !m.speed && !m.resist && !m.dmgBoost) { fx.text(this.x, this.y - 90, 'Already full HP', '#9fd8ff', 16); return false; }
       this.meds[id]--;
       const amt = Math.min(m.heal * (1 + 0.2 * G().perk('medic')), this.maxHp * 2);
       if (m.time <= 0.25) this.hp = Math.min(this.maxHp, this.hp + amt);
       else this.heals.push({ rate: amt / m.time, left: amt });
-      if (m.speed) { this.speedT = m.speedTime; this.speedMul = m.speed; }
-      if (m.resist) { this.resistT = m.resistTime; this.resist = m.resist; }
-      if (m.regen) { this.regenT = m.regenTime; this.regen = m.regen; }
+      // timed effects keep the stronger value and the longer timer, so a weak med never cancels a strong one
+      const buff = (tKey, vKey, v, t) => { this[vKey] = this[tKey] > 0 ? Math.max(this[vKey], v) : v; this[tKey] = Math.max(this[tKey], t); };
+      if (m.speed) buff('speedT', 'speedMul', m.speed, m.speedTime);
+      if (m.resist) buff('resistT', 'resist', m.resist, m.resistTime);
+      if (m.regen) buff('regenT', 'regen', m.regen, m.regenTime);
+      if (m.dmgBoost) { buff('dmgT', 'dmgMul', m.dmgBoost, m.dmgTime); this.effB = {}; }
       fx.text(this.x, this.y - 90, '+ ' + m.name, '#5dff8a', 18);
       Z.audio.sfx('heal');
       for (let i = 0; i < 10; i++) fx.add({ t: 'spark', x: this.x + rand(-14, 14), y: this.y - rand(10, 60), vx: 0, vy: -rand(40, 120), life: 0.7, size: 2.5, color: '#5dff8a', g: 0, drag: 0, add: true });
       return true;
     }
     smartHeal() {
+      if (this.dead) return;
       const missing = this.maxHp - this.hp;
       if (missing <= 0) { fx.text(this.x, this.y - 90, 'Already full HP', '#9fd8ff', 16); return; }
-      // pick the cheapest owned item that covers most of the missing HP
-      const order = Z.MEDS.filter(m => this.meds[m.id] > 0 && !m.speed && !m.resist).sort((a, b) => a.heal - b.heal);
-      if (!order.length) { fx.text(this.x, this.y - 90, 'No meds! Buy some at a shop', '#ff6a6a', 16); Z.audio.sfx('deny'); return; }
+      // pick the cheapest owned item that covers most of the missing HP; when you're nearly down,
+      // skip the slow ones (a Blood Bag takes 8 s) as long as something faster is on hand
+      const plain = Z.MEDS.filter(m => this.meds[m.id] > 0 && !m.speed && !m.resist && !m.dmgBoost && !m.revive && m.heal > 0);
+      const urgent = this.hp < this.maxHp * 0.35;
+      let order = plain.filter(m => !urgent || m.time <= 4);
+      if (!order.length) order = plain;
+      if (!order.length) {
+        // only special meds left: they heal too, so use one as a last resort
+        const spare = ['morphine', 'combat-stim', 'adrenaline', 'painkillers'].find(id => this.meds[id] > 0);
+        if (spare) { this.useMed(spare); return; }
+        fx.text(this.x, this.y - 90, 'No meds! Buy some at a shop', '#ff6a6a', 16); Z.audio.sfx('deny'); return;
+      }
+      order.sort((a, b) => a.heal - b.heal);
       const pick = order.find(m => m.heal >= missing * 0.8) || order[order.length - 1];
       this.useMed(pick.id);
     }
@@ -267,6 +304,7 @@
       if (sw && g.time - (this.lastHurt || -99) > 4 && this.hp < this.maxHp) this.hp = Math.min(this.maxHp, this.hp + sw * dt);
       if (this.resistT > 0) this.resistT -= dt;
       if (this.speedT > 0) this.speedT -= dt;
+      if (this.dmgT > 0) this.dmgT -= dt;
       const b = this.body && Z.ARMOR_BY_ID[this.body];
       if (b && b.regen) this.bodyDur = Math.min(b.dur, this.bodyDur + b.regen * dt);
       const hh = this.head && Z.ARMOR_BY_ID[this.head];
@@ -474,7 +512,7 @@
     },
     henchman: {
       name: 'Big Henchman', tier: 6, hp: 460, armor: 0.35, s: 1.18, build: 'muscle', speed: 120, weapon: 'm249-saw', dmg: 6, rate: 6.5, err: 0.045, lead: 0.85, sight: 1300, pref: [300, 650],
-      reward: [800, 1100], react: 0.7, burst: [11, 1.8], bspeed: 1700, telegraph: 0.7, grenades: true, headgear: 'shades', hat: 'bald', vest: '#2a2a30', stepMax: 30,
+      reward: [380, 500], react: 0.7, burst: [11, 1.8], bspeed: 1700, telegraph: 0.7, grenades: true, headgear: 'shades', hat: 'bald', vest: '#2a2a30', stepMax: 30,
       colors: { skin: '#c48a60', shirt: '#1a1a1e', pants: '#24242a', glove: '#111' },
       lines: ['You\'re going DOWN!', 'Nobody escapes the boss!', 'I eat guys like you for breakfast!', 'Feel the burn!', 'HAHAHA!']
     },
@@ -559,9 +597,10 @@
       for (let i = 0; i < parts; i++) Z.spawnCash(this.x, this.y - 40 * this.s, Math.ceil(cash / parts), true);
       const r = Math.random();
       // about half of all kills drop something to heal with
-      if (r < 0.3) Z.spawnMed(this.x, this.y - 40, 'gauze');
-      else if (r < 0.44) Z.spawnMed(this.x, this.y - 40, 'bandage');
-      else if (r < 0.5 + this.def.tier * 0.02) Z.spawnMed(this.x, this.y - 40, this.def.tier >= 5 ? 'medkit' : 'first-aid');
+      if (r < 0.28) Z.spawnMed(this.x, this.y - 40, 'gauze');
+      else if (r < 0.39) Z.spawnMed(this.x, this.y - 40, 'bandage');
+      else if (r < 0.44) Z.spawnMed(this.x, this.y - 40, Math.random() < 0.5 ? 'energy-bar' : 'splint');
+      else if (r < 0.50 + this.def.tier * 0.02) Z.spawnMed(this.x, this.y - 40, this.def.tier >= 5 ? (Math.random() < 0.25 ? 'morphine' : 'medkit') : 'first-aid');
       g.stats.kills++;
       g.stats.killsByType[this.type] = (g.stats.killsByType[this.type] || 0) + 1;
       if (head) g.stats.headshots++;
@@ -651,7 +690,7 @@
       if (this.blockedBy && this.blockedBy.hp > 0) { this.siege = this.blockedBy; this.siegeT = 2; }
       if (!this.siege && !this.sees && (this.hunt || this.alert > 0)) {
         this.scanT = (this.scanT || 0) - dt;
-        if (this.scanT <= 0) { this.scanT = 0.6; this.siege = Z.nearestStructure(this.x, 420, true); if (this.siege) this.siegeT = 3; }
+        if (this.scanT <= 0) { this.scanT = 0.6; this.siege = Z.stackRoot(Z.nearestStructure(this.x, 420, true)); if (this.siege) this.siegeT = 3; }
       }
       if (this.siege) {
         const s = this.siege; this.siegeT -= dt;
@@ -668,10 +707,11 @@
             if (this.react <= 0 && Math.abs(sx - G().cam.x) < g.viewW / 2 + 200) this.tryFire(dt * slow, adx);
           }
           // punch / kick whatever is right in front of us
-          if (adx < s.w / 2 + 26 * this.s) Z.damageStructure(s, (3 + D.tier * 3) * dt, this.x);
+          if (adx < s.w / 2 + 26 * this.s && s.base > this.y - 90 * this.s && s.top < this.y + 10) Z.damageStructure(s, (3 + D.tier * 3) * dt, this.x);
           // hop over low cover
           this.hopT -= dt;
-          if (s.def.solid && s.h <= 75 && this.onGround && this.hopT <= 0 && adx < s.w / 2 + 40) { this.hopT = 1.5; if (Math.random() < 0.6) { this.vy = -Math.sqrt(2 * GRAV * (s.h + 18)); this.onGround = false; this.vx = this.facing * D.speed; } }
+          const climb = this.y - s.top;
+          if (s.def.solid && climb > 0 && climb <= 75 && this.onGround && this.hopT <= 0 && adx < s.w / 2 + 40) { this.hopT = 1.5; if (Math.random() < 0.6) { this.vy = -Math.sqrt(2 * GRAV * (climb + 18)); this.onGround = false; this.vx = this.facing * D.speed; } }
         }
       }
 
@@ -984,8 +1024,9 @@
     }
     for (const pk of g.pickups) { const dd = Math.hypot(pk.x - x, pk.y - y); if (dd < r) { pk.vy -= 400; pk.vx += Math.sign(pk.x - x) * 200; pk.ground = false; } }
     for (const s of g.structures) {
-      const dd = Math.hypot(s.x - x, s.top + s.h / 2 - y);
-      if (dd < r + s.w / 2) Z.damageStructure(s, dmg * (1 - dd / (r + s.w / 2) * 0.6) * (owner === 'e' ? 1 : 0.12), x);
+      const ex = Math.max(0, Math.abs(x - s.x) - s.w / 2), ey = y < s.top ? s.top - y : y > s.base ? y - s.base : 0;
+      const dd = Math.hypot(ex, ey);
+      if (dd < r) Z.damageStructure(s, dmg * (1 - dd / r * 0.6) * (owner === 'e' ? 1 : 0.12), x);
     }
     if (w && w.cluster && !w.isBomblet) {
       const bw = { name: w.name, isBomblet: true };
@@ -1150,6 +1191,13 @@
     G().pickups.push({ type: 'crate', x, y: -400, vx: 0, vy: 90, t: 0, ground: false, life: 120, chute: true, value: Math.round(rand(250, 700) * (1 + G().threat * 0.15)) });
   };
 
+  // ground height for a pickup: the terrain, or the top of a wall it is resting on
+  function pickupFloor(p, T) {
+    let gy = T.heightAt(p.x);
+    const sol = G().solids;
+    for (let i = 0; i < sol.length; i++) { const b = sol[i]; if (Math.abs(p.x - b.x) < b.w / 2 && p.y <= b.top + 12 && b.top < gy) gy = b.top; }
+    return gy - (p.type === 'crate' ? 0 : 6);
+  }
   Z.updatePickups = function (dt) {
     const g = G(), T = g.terrain, P = g.player;
     const keep = [];
@@ -1171,10 +1219,10 @@
         else p.vy += (p.mag ? 0 : 1500) * dt;
         if (p.mag) { p.vx *= 0.9; p.vy *= 0.9; }
         p.x += p.vx * dt; p.y += p.vy * dt;
-        const gy = T.heightAt(p.x) - (p.type === 'crate' ? 0 : 6);
+        const gy = pickupFloor(p, T);
         if (p.y >= gy) { p.y = gy; if (Math.abs(p.vy) > 200 && !p.chute) { p.vy *= -0.3; p.vx *= 0.6; } else { p.ground = true; p.vy = 0; p.vx = 0; if (p.chute) { p.chute = false; Z.audio.sfxAt('land', p.x); fx.smoke(p.x, p.y, 6, 12, '180,160,140', -20); } } }
       } else {
-        const gy = T.heightAt(p.x) - (p.type === 'crate' ? 0 : 6);
+        const gy = pickupFloor(p, T);
         if (gy > p.y + 2) p.ground = false; else p.y = gy;
       }
       keep.push(p);
@@ -1194,7 +1242,7 @@
       Z.audio.sfx('pickup-med');
     } else if (p.type === 'crate') {
       g.money += p.value; g.stats.earned += p.value;
-      const meds = ['gauze', 'bandage', 'first-aid', 'medkit', 'adrenaline'];
+      const meds = ['gauze', 'bandage', 'first-aid', 'medkit', 'adrenaline', 'splint', 'energy-bar', 'morphine', 'combat-stim', 'blood-bag'];
       const id = meds[Math.floor(Math.random() * meds.length)];
       P.meds[id] = (P.meds[id] || 0) + 1;
       P.meds.gauze = (P.meds.gauze || 0) + 2;

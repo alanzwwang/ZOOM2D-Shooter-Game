@@ -118,7 +118,7 @@
       const j = i + (e.shiftKey ? 10 : 0);
       if (g.building) { if (j < Z.BUILD.length) { g.buildSel = j; Z.audio.sfx('click'); } } else P.switchTo(i);
     }
-    if (e.code === 'Digit0' && g.building) g.buildSel = 9;
+    if (e.code === 'Digit0' && g.building) { const j = e.shiftKey ? 19 : 9; if (j < Z.BUILD.length) { g.buildSel = j; Z.audio.sfx('click'); } }
     if (e.code === 'KeyQ') { if (g.building) g.buildSel = (g.buildSel + Z.BUILD.length - 1) % Z.BUILD.length; else P.switchTo(P.lastSlot); }
     if (e.code === 'KeyV') P.toggleMode();
     if (e.code === 'KeyB') setBuilding(!g.building);
@@ -237,8 +237,9 @@
       { t: 0, d: 6, s: 'Move with A / D, jump with SPACE or W. Hold SHIFT to sprint.' },
       { t: 6, d: 6, s: 'Aim with the mouse and LEFT-CLICK to shoot. Hold RIGHT-CLICK to aim down sights.' },
       { t: 12, d: 6, s: 'Kill enemies and grab the cash they drop. Loot is hidden all over the map!' },
-      { t: 18, d: 7, s: 'CLICK the glowing SHOP sign (or press E near it) to buy 500 weapons, armor, meds & barricades.' },
+      { t: 18, d: 7, s: 'CLICK the glowing SHOP sign (or press E near it) to buy ' + Z.WEAPONS.length + ' weapons, armor, meds & barricades.' },
       { t: 25, d: 7, s: 'Press B to enter BUILD MODE and fortify a base with walls, traps and turrets.' },
+      { t: 38.5, d: 6, s: 'Build a wall on top of the same kind of wall to stack it taller. Turrets can sit on walls too!' },
       { t: 32, d: 6, s: 'Press H to heal, R to reload, V to switch fire mode, Q to quick-swap.' },
       { t: 45, d: 7, s: 'Open the shop\'s UPGRADE YOU tab to boost your health, damage, healing and speed!' }
     ];
@@ -259,8 +260,13 @@
     const P = g.player;
     return store.set(SAVE_KEY, {
       v: 2, seed: g.seed, money: g.money, time: g.time, stats: g.stats, perks: g.perks, buildInv: g.buildInv, achievements: g.achievements,
-      player: { x: P.x, hp: P.hp, slots: P.slots, owned: [...P.owned], cur: P.cur, body: P.body, head: P.head, bodyDur: P.bodyDur, headDur: P.headDur, meds: P.meds, upg: P.upg, modeSel: P.modeSel },
-      structures: g.structures.map(s => { const pile = g.pickups.find(p => p.printer === s); return { id: s.id, x: s.x, hp: s.hp, maxHp: s.maxHp, free: s.free || undefined, pile: pile ? pile.value : undefined }; }),
+      player: { x: P.x, y: P.y, hp: P.hp, slots: P.slots, owned: [...P.owned], cur: P.cur, body: P.body, head: P.head, bodyDur: P.bodyDur, headDur: P.headDur, meds: P.meds, upg: P.upg, modeSel: P.modeSel,
+        fx: { heals: P.heals.map(h => [h.rate, h.left]), speedT: P.speedT, speedMul: P.speedMul, resistT: P.resistT, resist: P.resist, regenT: P.regenT, regen: P.regen, dmgT: P.dmgT, dmgMul: P.dmgMul } },
+      structures: g.structures.map(s => {
+        const pile = g.pickups.find(p => p.printer === s), on = s.on ? g.structures.indexOf(s.on) : -1;
+        return { id: s.id, x: s.x, hp: s.hp, maxHp: s.maxHp, free: s.free || undefined, pile: pile ? pile.value : undefined,
+          lv: s.levels > 1 ? s.levelFree.map(Number) : undefined, lh: s.levels > 1 ? s.levelHp.map(Math.round) : undefined, on: on >= 0 ? on : undefined };
+      }),
       raidT: g.raidT, deathRelief: g.deathRelief, freeStock: g.freeStock, craters: encodeCraters(), savedAt: Date.now()
     });
   }
@@ -288,12 +294,48 @@
     P.owned = new Set(p.owned.filter(id => Z.WEAPON_BY_ID[id])); P.cur = P.slots[p.cur] ? p.cur : P.slots.findIndex(Boolean);
     P.body = p.body; P.head = p.head; P.bodyDur = p.bodyDur; P.headDur = p.headDur; P.meds = p.meds || {}; P.upg = p.upg || {}; P.modeSel = p.modeSel || {};
     P.invalidate(); P.hp = Math.min(P.maxHp, p.hp || P.maxHp);
-    for (const s of d.structures || []) {
-      const st = Z.placeStructure(s.id, s.x); if (!st) continue;
-      if (s.maxHp) st.maxHp = s.maxHp;
-      st.hp = Math.min(st.maxHp, s.hp != null ? s.hp : st.maxHp);
+    const pf = p.fx;
+    if (pf && typeof pf === 'object') {
+      const num = v => (typeof v === 'number' && isFinite(v) ? v : 0);
+      P.heals = Array.isArray(pf.heals) ? pf.heals.filter(h => Array.isArray(h) && num(h[0]) > 0 && num(h[1]) > 0).map(h => ({ rate: h[0], left: h[1] })) : [];
+      for (const k of ['speedT', 'resistT', 'regenT', 'dmgT']) P[k] = num(pf[k]);
+      P.speedMul = num(pf.speedMul) || 1; P.resist = num(pf.resist); P.regen = num(pf.regen); P.dmgMul = num(pf.dmgMul) || 1;
+    }
+    const list = Array.isArray(d.structures) ? d.structures : [];
+    const placed = [];
+    for (const s of list) {
+      const st = s && Z.BUILD_BY_ID[s.id] ? Z.placeStructure(s.id, s.x) : null; placed.push(st); if (!st) continue;
+      if (Array.isArray(s.lv) && s.lv.length > 1 && st.def.stack) {
+        // never more levels than fit under the height cap
+        const n = Math.min(s.lv.length, Math.max(1, Math.floor(Z.MAX_STACK_H / st.def.h)));
+        st.levels = n; st.levelFree = s.lv.slice(0, n).map(Boolean); st.h = st.def.h * n;
+        st.levelHp = Array.isArray(s.lh) && s.lh.length >= n ? s.lh.slice(0, n).map(Number) : new Array(n).fill(st.maxHp);
+      } else st.levelFree = [!!s.free];
+      if (s.maxHp > 0) st.maxHp = s.maxHp;
+      else if (st.levels > 1) st.maxHp = st.levelHp.reduce((a, b) => a + b, 0);
+      st.hp = Math.min(st.maxHp, s.hp > 0 ? s.hp : st.maxHp);
       if (s.free) st.free = true;
-      if (s.pile) { const p = Z.spawnCash(st.x + 30, st.top - 6, s.pile, false, 1e9); p.printer = st; }
+    }
+    // put stacked structures back on top of whatever they stood on (only on solid blocks, never in a loop)
+    list.forEach((s, i) => {
+      const st = placed[i], j = s && s.on;
+      if (!st || !Number.isInteger(j) || j === i || !placed[j] || !placed[j].def.solid) return;
+      st.on = placed[j];
+      for (let r = st.on, n = 0; r; r = r.on, n++) if (r === st || n > 60) { st.on = null; break; }
+    });
+    // settle bottom-up, and keep supports ahead of what they hold so later frames stay in order
+    const depth = st => { let n = 0; for (let r = st.on; r && n < 60; r = r.on) n++; return n; };
+    g.structures.sort((a, b) => depth(a) - depth(b));
+    for (const st of g.structures) st.settle();
+    Z.rebuildSolids();
+    g.quietSettle = true;
+    list.forEach((s, i) => { const st = placed[i]; if (st && s.pile > 0) { const pile = Z.spawnCash(Z.printerPileX(st), st.top - 6, s.pile, false, 1e9); pile.printer = st; } });
+    // stand where you were saved (on top of a wall, say) if that spot is still free; otherwise on the ground
+    if (typeof p.y === 'number' && isFinite(p.y)) {
+      const gy = g.terrain.heightAt(P.x);
+      const onTop = g.solids.some(b => Math.abs(P.x - b.x) < b.w / 2 + 11 && Math.abs(p.y - b.top) < 2);
+      const inside = g.solids.some(b => Math.abs(P.x - b.x) < b.w / 2 + 11 && p.y > b.top + 2 && p.y - 62 < b.base);
+      if (p.y <= gy && !inside && (onTop || gy - p.y < 1)) P.y = p.y;
     }
     g.spawnT = 3; g.cashT = 3; g.dropT = 40; g.raidT = d.raidT || 170; g.raidWarn = false; g.maxX = P.x; g.biomeShown = -1; g.tips = [];
     g.threat = calcThreat();
@@ -320,18 +362,29 @@
       merc: t < 3.2 ? 0 : Math.max(0.3, 3.5 - Math.abs(t - 6) * 0.8),
       rocketeer: t < 3.8 ? 0 : 0.9,
       marksman: t < 4.2 ? 0 : 0.9,
-      // the big muscly henchmen only show up after a good while (threat 6.5+ and 10+ minutes in)
-      henchman: t < 6.5 || g.time < 600 || g.enemies.filter(e => e.type === 'henchman' && !e.dead).length >= 2 ? 0 : Math.min(1.6, (t - 6) * 0.5),
+      // the big muscly henchmen only show up after a good while (threat 6.5+ and 10+ minutes in),
+      // and never more than one at a time — counting any already queued up for a raid
+      henchman: t < 6.5 || g.time < 600 || henchmenOut() >= 1 ? 0 : Math.min(1.6, (t - 6) * 0.5),
       brute: 0
     };
-    if (t >= 8.5 && g.time > 1200 && !g.enemies.some(e => e.type === 'brute' && !e.dead)) W.brute = 0.12 * (t - 8) * (raid ? 2 : 1);
+    if (t >= 8.5 && g.time > 1200 && bossesOut('brute') < 1) W.brute = 0.12 * (t - 8) * (raid ? 2 : 1);
     let sum = 0; for (const k in W) sum += W[k];
     let r = Math.random() * sum;
     for (const k in W) { r -= W[k]; if (r <= 0) return k; }
     return 'dimwit';
   }
+  // Big Henchmen (or Boss Brutes) alive on the map plus any waiting in the raid queue
+  function bossesOut(type) {
+    let n = 0;
+    for (const e of g.enemies) if (e.type === type && !e.dead) n++;
+    for (const q of g.spawnQueue) if (q.type === type) n++;
+    return n;
+  }
+  const henchmenOut = () => bossesOut('henchman');
   function spawnEnemy(type, side, hunt) {
     const T = g.terrain, P = g.player;
+    // safety net: only one Big Henchman on the map at any time
+    if ((type === 'henchman' || type === 'brute') && g.enemies.some(e => e.type === type && !e.dead)) type = 'merc';
     side = side || (Math.random() < 0.5 ? -1 : 1);
     let x = P.x + side * (g.viewW / 2 + rand(120, 500));
     if (x < 200 || x > T.width - 200) x = P.x - side * (g.viewW / 2 + rand(120, 500));
@@ -347,7 +400,7 @@
     const T = g.terrain;
     if (Math.random() < 0.12) { // medical supplies lying around
       for (const s of T.shops) if (Math.abs(s - x) < 120) x += 200;
-      const mr = Math.random(), id = mr < 0.7 ? 'gauze' : mr < 0.95 ? 'bandage' : 'first-aid';
+      const mr = Math.random(), id = mr < 0.6 ? 'gauze' : mr < 0.8 ? 'bandage' : mr < 0.88 ? 'energy-bar' : mr < 0.95 ? 'splint' : 'first-aid';
       g.pickups.push({ type: 'med', id, x, y: T.heightAt(x) - 6, vx: 0, vy: 0, t: 1, ground: true, life: initial ? 1e9 : 120, loot: true });
       return;
     }
@@ -415,32 +468,49 @@
   function setBuilding(on) {
     g.building = on;
     Z.audio.sfx('click');
-    if (on) banner('BUILD MODE — 1-0 (Shift for 11-19) / wheel to pick · LMB place · RMB sell · B exit', '#ffd84d', 3);
+    if (on) banner('BUILD MODE — 1-0 (Shift for 11-20) / Q, E or wheel to pick · LMB place · RMB sell · B exit', '#ffd84d', 3);
   }
   function ghostX() { return Math.round(g.mouse.wx / 4) * 4; }
   function tryPlace() {
-    const def = Z.BUILD[g.buildSel], x = ghostX();
-    const err = Z.canPlace(def, x);
-    if (err) { Z.fx.text(x, g.terrain.heightAt(x) - 60, err, '#ff6a6a', 16); Z.audio.sfx('deny'); return; }
+    const def = Z.BUILD[g.buildSel], plan = Z.placementPlan(def, ghostX()), x = plan.x;
+    const ty = labelY(plan.peak !== undefined ? plan.peak : plan.top);
+    if (plan.err) { Z.fx.text(x, ty, plan.err, '#ff6a6a', 16); Z.audio.sfx('deny'); return; }
     let free = false;
     if ((g.buildInv[def.id] || 0) > 0) { g.buildInv[def.id]--; if ((g.freeStock[def.id] || 0) > 0) { g.freeStock[def.id]--; free = true; } }
-    else if (g.money >= def.price) { g.money -= def.price; Z.fx.text(x, g.terrain.heightAt(x) - 80, '-$' + def.price.toLocaleString(), '#ffd84d', 16); }
-    else { Z.fx.text(x, g.terrain.heightAt(x) - 60, 'Need $' + def.price.toLocaleString(), '#ff6a6a', 16); Z.audio.sfx('deny'); return; }
-    const s = Z.placeStructure(def.id, x);
-    if (free) s.free = true;
+    else if (g.money >= def.price) { g.money -= def.price; Z.fx.text(x, ty - 20, '-$' + def.price.toLocaleString(), '#ffd84d', 16); }
+    else { Z.fx.text(x, ty, 'Need $' + def.price.toLocaleString(), '#ff6a6a', 16); Z.audio.sfx('deny'); return; }
+    const s = Z.buildFromPlan(def, plan, free);
     g.stats.built++;
     Z.audio.sfx('build');
-    Z.fx.smoke(x, s.base, 6, 10, '170,150,130', -20);
+    Z.fx.smoke(x, plan.base, 6, 10, '170,150,130', -20);
+    if (plan.mode === 'merge') Z.fx.text(x, labelY(s.top) + 6, def.name + ' ×' + s.levels, '#ffd84d', 16);
   }
   function trySell() {
     const wx = g.mouse.wx, wy = g.mouse.wy;
-    const s = g.structures.find(s => wx > s.x - s.w / 2 - 6 && wx < s.x + s.w / 2 + 6 && wy > s.top - 20 && wy < s.base + 10);
+    // the structure under the cursor; if two touch (a turret on a wall), the one whose box really holds the cursor wins
+    let s = null, best = 1e9;
+    for (const o of g.structures) {
+      if (!(wx > o.x - o.w / 2 - 6 && wx < o.x + o.w / 2 + 6 && wy > o.top - 20 && wy < o.base + 10)) continue;
+      const d = wy < o.top ? o.top - wy : wy > o.base ? wy - o.base : 0;
+      if (d < best) { best = d; s = o; }
+    }
     if (!s) return;
-    const refund = s.free ? 0 : Math.round(s.def.price * 0.5 * s.hp / s.maxHp);
+    // a stack sells one block at a time, from the top
+    const frac = s.hp / s.maxHp, top = s.top;
+    let wasFree;
+    if (s.levels > 1) wasFree = Z.removeLevel(s);
+    else { wasFree = s.free; Z.destroyStructure(s, true); }
+    const refund = wasFree ? 0 : Math.round(s.def.price * 0.5 * frac);
     g.money += refund;
-    Z.fx.text(s.x, s.top - 20, 'Sold +$' + refund.toLocaleString(), '#5dff8a', 16);
-    Z.destroyStructure(s, true);
+    Z.fx.text(s.x, labelY(top), 'Sold +$' + refund.toLocaleString(), '#5dff8a', 16);
     Z.audio.sfx('coin');
+  }
+
+  // world y for a label above something, kept below the top HUD panels so it can always be read
+  function labelY(worldTop) {
+    // below the money panel, the minimap and its caption, and any banner on screen
+    const camTop = g.cam.y - g.cam.vh / 2, hudPad = (175 + 70 * g.banners.length) * hudU / Math.max(0.01, g.scale);
+    return Math.max(worldTop - 20, camTop + hudPad);
   }
 
   // ---- shop signs ---------------------------------------------------------------------------
@@ -510,6 +580,7 @@
     separateEnemies();
     Z.updateBullets(dt);
     Z.updateStructures(dt);
+    g.quietSettle = false;
     Z.updatePickups(dt);
     updateParticles(dt);
     director(dt);
@@ -585,7 +656,8 @@
     // build mode locks the look-ahead so the placement ghost doesn't drift under a still mouse
     const look = g.building ? 0 : P.aiming ? 0.45 : 0.22;
     const vy = g.mouse.wy - (P.y - 95);
-    return { x: P.x + (g.mouse.wx - P.x) * look, y: P.y - 95 + vy * look * (vy > 0 ? 1.3 : 0.6), vh };
+    const high = Math.min(320, Math.max(0, g.terrain.heightAt(P.x) - P.y)) * 0.55;
+    return { x: P.x + (g.mouse.wx - P.x) * look, y: P.y - 95 + high + vy * look * (vy > 0 ? 1.3 : 0.6), vh };
   }
   function snapCamera() { const t = camTarget(); g.cam.x = t.x; g.cam.y = t.y; g.cam.vh = t.vh; }
   function updateCamera(dt) {
@@ -937,19 +1009,32 @@
   }
 
   function drawGhost(ctx, t) {
-    const def = Z.BUILD[g.buildSel], x = ghostX();
-    const fake = { def, id: def.id, x, w: def.w, h: def.h, hp: 1, maxHp: 1, flash: 0, aim: -0.3, incomeT: def.every || 0, spin: 0, t };
-    const T = g.terrain;
-    fake.base = Math.max(T.heightAt(x - def.w / 2), T.heightAt(x), T.heightAt(x + def.w / 2)); fake.top = fake.base - def.h;
-    const err = Z.canPlace(def, x);
-    Z.drawStructure(ctx, fake, t, true);
+    const def = Z.BUILD[g.buildSel], plan = Z.placementPlan(def, ghostX()), x = plan.x, err = plan.err;
+    const fake = { def, id: def.id, x, w: def.w, h: def.h, hp: 1, maxHp: 1, flash: 0, aim: -0.3, incomeT: def.every || 0, spin: 0, t, levels: 1, base: plan.base, top: plan.top };
+    if (plan.mode === 'merge') {
+      // preview the whole stack as the single taller block it will become
+      const s = plan.target;
+      Object.assign(fake, { h: s.h + def.h, top: s.top - def.h, base: s.base, levels: s.levels + 1 });
+    }
+    if (plan.mode === 'merge' && err) Z.drawStructure(ctx, Object.assign({}, fake, { h: def.h, top: plan.top, base: plan.base, levels: 1 }), t, true);
+    else {
+      Z.drawStructure(ctx, fake, t, true);
+      // whatever rides on the stack, shown where it will end up
+      if (plan.mode === 'merge') for (const r of plan.riders) Z.drawStructure(ctx, Object.assign(Object.create(Object.getPrototypeOf(r)), r, { top: r.top - def.h, base: r.base - def.h, flash: 0, hp: r.maxHp }), t, true);
+    }
     ctx.strokeStyle = err ? 'rgba(255,70,70,0.9)' : 'rgba(90,255,140,0.9)'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
-    ctx.strokeRect(x - def.w / 2 - 4, fake.top - 4, def.w + 8, def.h + 8); ctx.setLineDash([]);
-    if (def.turret || def.heal) { ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.beginPath(); ctx.arc(x, fake.top + 14, def.turret ? def.turret.range : def.radius, 0, 7); ctx.stroke(); }
+    ctx.strokeRect(x - def.w / 2 - 4, plan.top - 4, def.w + 8, def.h + 8); ctx.setLineDash([]);
+    if (def.turret || def.heal) { ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.beginPath(); ctx.arc(x, plan.top + 14, def.turret ? def.turret.range : def.radius, 0, 7); ctx.stroke(); }
     ctx.font = '700 14px "Space Grotesk", sans-serif'; ctx.textAlign = 'center';
     const have = g.buildInv[def.id] || 0;
+    const where = plan.mode === 'merge' ? def.name + ' ×' + (plan.target.levels + 1) : plan.mode === 'on' ? def.name + ' on the ' + plan.target.def.name : def.name;
+    const label = err || where + (have ? ' · in stock: ' + have : ' — $' + def.price.toLocaleString());
+    // keep the label inside the view and clear of the HUD panels
+    const lw = ctx.measureText(label).width / 2 + 10, camL = g.cam.x - g.viewW / 2, camR = g.cam.x + g.viewW / 2;
+    const lx = Math.min(Math.max(x, camL + lw), camR - lw), ly = labelY((plan.peak !== undefined ? plan.peak : plan.top) + 4);
+    ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(lx - lw, ly - 15, lw * 2, 21);
     ctx.fillStyle = err ? '#ff7a7a' : '#fff';
-    ctx.fillText(err || (have ? def.name + ' (in stock: ' + have + ')' : def.name + ' — $' + def.price.toLocaleString()), x, fake.top - 16);
+    ctx.fillText(label, lx, ly);
     ctx.textAlign = 'left';
   }
 
@@ -995,6 +1080,7 @@
   const fmt = n => '$' + Math.floor(n).toLocaleString();
   const shortMoney = p => '$' + (p >= 1e6 ? +(p / 1e6).toFixed(p >= 1e7 ? 0 : 1) + 'M' : p >= 1000 ? +(p / 1000).toFixed(p >= 1e4 ? 0 : 1) + 'k' : p);
 
+  let chipTop = 0;
   function drawHUD(W, H, dt) {
     const P = g.player;
     // never shrink the HUD into unreadable text on small windows; rearrange instead
@@ -1002,7 +1088,7 @@
     ctx.save(); ctx.scale(u, u);
     const VW = W / u, VH = H / u;
     const compact = VW - 960 < 9 * 104 + 10; // not enough room for the hotbar between the side panels
-    const rowY = compact ? VH - 292 : VH - 92;
+    const rowY = compact ? VH - 300 : VH - 92;
     const RUSSO = '"Russo One", sans-serif';
 
     // money + threat (top-left)
@@ -1017,8 +1103,8 @@
     if (g.raidT < 30) txt('RAID IN ' + Math.ceil(g.raidT) + 's', 44, 168, 20, Math.floor(g.realTime * 3) % 2 ? '#ff4a4a' : '#fff', 'left', 400, RUSSO);
 
     // health / armor (bottom-left)
-    const by = VH - 200;
-    panel(24, by, 440, 176, 14);
+    const by = VH - 238;
+    panel(24, by, 440, 214, 14);
     txt('HP', 44, by + 38, 18, '#ff6a6a', 'left', 400, RUSSO);
     bar(90, by + 20, 262, 24, P.hp / P.maxHp, '#ff5a5a', '#b3122a');
     for (const h of P.heals) { const f = Math.min(P.maxHp, P.hp + h.left) / P.maxHp; ctx.fillStyle = 'rgba(93,255,138,0.35)'; ctx.fillRect(90 + 262 * P.hp / P.maxHp, by + 20, 262 * (f - P.hp / P.maxHp), 24); }
@@ -1030,25 +1116,36 @@
     txt(body ? body.name : 'No vest', 110, by + 86, 12, 'rgba(255,255,255,0.6)');
     txt(head ? head.name : 'No helmet', 268, by + 86, 12, 'rgba(255,255,255,0.6)');
     txt('-' + Math.round(P.armorReduce() * 100) + '%', 446, by + 70, 13, '#7fc8ff', 'right');
-    // status effects
-    let ex = 404; const st = [];
-    if (P.speedT > 0) st.push(['⚡', P.speedT, '#4cd4ff']);
-    if (P.resistT > 0) st.push(['💊', P.resistT, '#ffd84d']);
-    if (P.regenT > 0) st.push(['✚', P.regenT, '#3aff9b']);
-    st.forEach((s2, i) => txt(s2[0] + Math.ceil(s2[1]), 446, by + 96 + i * 18, 14, s2[2], 'right'));
-    // meds bar
-    const mx = 44, my = by + 104;
-    Z.MEDS.forEach((m, i) => {
-      const x = mx + i * 50, n = P.meds[m.id] || 0;
-      ctx.fillStyle = n ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.03)';
-      ctx.fillRect(x, my, 44, 52);
-      ctx.globalAlpha = n ? 1 : 0.3;
-      Z.drawMedIcon(ctx, m, x + 22, my + 24, 0.62);
-      ctx.globalAlpha = 1;
-      txt(m.key, x + 4, my + 13, 11, '#ffd84d', 'left', 800);
-      txt('' + n, x + 40, my + 48, 13, '#fff', 'right', 800);
+    // status effects: little timer chips just above the panel
+    const st = [];
+    if (P.speedT > 0) st.push(['⚡ SPEED', P.speedT, '#4cd4ff']);
+    if (P.resistT > 0) st.push(['💊 RESIST', P.resistT, '#ffd84d']);
+    if (P.regenT > 0) st.push(['✚ REGEN', P.regenT, '#3aff9b']);
+    if (P.dmgT > 0) st.push(['💥 DAMAGE', P.dmgT, '#ff4dc4']);
+    if (P.meds.defibrillator > 0) st.push(['♥ DEFIB ×' + P.meds.defibrillator, 0, '#ff6a8a']);
+    // a column up the left edge, clear of the hotbar and the build bar
+    st.forEach((s2, i) => {
+      const label = s2[0] + (s2[1] > 0 ? ' ' + Math.ceil(s2[1]) + 's' : '');
+      ctx.font = '800 13px "Space Grotesk", sans-serif';
+      const cw2 = ctx.measureText(label).width + 20, cy = by - 34 - i * 30;
+      panel(24, cy, cw2, 26, 8, 0.7);
+      txt(label, 34, cy + 18, 13, s2[2], 'left', 800);
     });
-    txt('H = quick heal', 44 + 8 * 50 - 6, my + 66, 11, 'rgba(255,255,255,0.45)', 'right');
+    chipTop = by - 4 - st.length * 30;
+    // meds: two rows of seven, each with its hotkey
+    const mx = 44, my = by + 98, per = 7;
+    Z.MEDS.forEach((m, i) => {
+      const x = mx + (i % per) * 58, y = my + Math.floor(i / per) * 48, n = P.meds[m.id] || 0;
+      ctx.fillStyle = n ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.03)';
+      ctx.fillRect(x, y, 52, 42);
+      ctx.globalAlpha = n ? 1 : 0.3;
+      Z.drawMedIcon(ctx, m, x + 24, y + 20, 0.5);
+      ctx.globalAlpha = 1;
+      txt(m.key, x + 4, y + 13, 11, '#ffd84d', 'left', 800);
+      if (n) { ctx.font = '800 12px "Space Grotesk", sans-serif'; const nw = ctx.measureText('' + n).width + 6; ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(x + 51 - nw, y + 28, nw, 14); }
+      if (n) txt('' + n, x + 48, y + 39, 12, '#fff', 'right', 800);
+    });
+    txt('H = quick heal', 44 + per * 58 - 6, my + 2 * 48 + 12, 11, 'rgba(255,255,255,0.45)', 'right');
 
     // weapon panel (bottom-right)
     const w = P.weapon;
@@ -1057,7 +1154,9 @@
     if (w) {
       const icon = Z.weaponIcon(w, 200, 90);
       ctx.drawImage(icon, wx + 16, wy + 18, 200, 90);
-      txt(w.name, wx + 228, wy + 42, w.name.length > 20 ? 17 : 21, w.gold ? '#ffd84d' : '#fff', 'left', 700);
+      let ns = 21; ctx.font = '700 21px "Space Grotesk", sans-serif';
+      const nw = ctx.measureText(w.name).width; if (nw > 202) ns = Math.max(12, Math.floor(21 * 202 / nw));
+      txt(w.name, wx + 228, wy + 42, ns, w.gold ? '#ffd84d' : '#fff', 'left', 700);
       txt(w.cat === 'Melee' ? 'MELEE' : w.cat.toUpperCase() + ' · ' + Z.MODE_LABEL[P.modeOf(w)].toUpperCase() + (w.modes.length > 1 ? ' (V)' : ''), wx + 228, wy + 64, 12, '#9fd8ff', 'left', 700);
       const up = P.upg[w.id]; const lv = up ? Object.values(up).reduce((a, b) => a + b, 0) : 0;
       if (lv) txt('★'.repeat(Math.min(10, Math.ceil(lv / 3))) + '  +' + lv + ' upgrades', wx + 228, wy + 84, 12, '#ffd84d');
@@ -1138,7 +1237,8 @@
       if (!left && !right) continue;
       const dist = left ? camL - e.x : e.x - camR;
       if (dist > 1400) continue;
-      const sy2 = clamp((e.y - 40 - (g.cam.y - g.cam.vh / 2)) / g.cam.vh * VH, 120, VH - 240);
+      // left-side arrows stop above the status chips and the health panel; right-side ones above the weapon panel
+      const sy2 = clamp((e.y - 40 - (g.cam.y - g.cam.vh / 2)) / g.cam.vh * VH, 120, left ? Math.min(VH - 256, chipTop - 18) : VH - 240);
       const x = left ? 18 : VW - 18, dir = left ? -1 : 1;
       ctx.globalAlpha = 0.5 + 0.5 * (1 - dist / 1400);
       ctx.fillStyle = e.def.tier >= 6 ? '#ff9b1f' : '#ff4a4a';
@@ -1154,10 +1254,10 @@
 
   function drawBuildBar(VW, VH, compact) {
     const n = Z.BUILD.length, per = Math.ceil(Z.BUILD.length / 2), sw = 78, sh = 66, gap = 6;
-    const total = per * (sw + gap) - gap, hx = VW / 2 - total / 2, y0 = (compact || VW - 960 < total ? VH - 212 : VH) - 2 * (sh + gap) - 34;
+    const total = per * (sw + gap) - gap, hx = VW / 2 - total / 2, y0 = (compact || VW - 960 < total ? VH - 250 : VH) - 2 * (sh + gap) - 34;
     panel(hx - 12, y0 - 36, total + 24, 2 * (sh + gap) + 62, 12, 0.78);
     txt('BUILD MODE', hx, y0 - 12, 16, '#ffd84d', 'left', 400, '"Russo One", sans-serif');
-    txt('1-0 / Q / wheel: pick  ·  LMB: place  ·  RMB: sell  ·  B: exit', hx + total, y0 - 12, 13, 'rgba(255,255,255,0.7)', 'right');
+    txt('1-0 (Shift: 11-20) / Q / E / wheel: pick  ·  LMB: place  ·  RMB: sell  ·  B: exit', hx + total, y0 - 12, 13, 'rgba(255,255,255,0.7)', 'right');
     Z.BUILD.forEach((d, i) => {
       const x = hx + (i % per) * (sw + gap), y = y0 + Math.floor(i / per) * (sh + gap), sel = i === g.buildSel;
       ctx.fillStyle = sel ? 'rgba(255,216,77,0.22)' : 'rgba(255,255,255,0.05)'; ctx.fillRect(x, y, sw, sh);
@@ -1280,10 +1380,11 @@
     Z.ui.init();
     requestAnimationFrame(frame);
   };
+  Z.RESPAWN_CAP = 50000; // dying costs 10% of your cash, at most this much
   Z.respawn = function () {
     const P = g.player;
     // dying costs 10% of your cash (capped), and the world eases off for a while
-    const lost = Math.min(Math.round(g.money * 0.1), 50000);
+    const lost = Math.min(Math.round(g.money * 0.1), Z.RESPAWN_CAP);
     g.money -= lost;
     g.deathRelief = Math.min(4, (g.deathRelief || 0) + 1.5);
     g.threat = calcThreat();

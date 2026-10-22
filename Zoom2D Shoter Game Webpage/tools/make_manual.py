@@ -41,8 +41,8 @@ ENEMIES = [
     ('Mercenary', 4, 140, '140-210', 'Helmet, vest and an AK-47. Leads moving targets.'),
     ('Rocketeer', 4, 120, '250-360', 'Fires RPGs that blow holes in the ground and in your walls.'),
     ('Marksman', 5, 100, '270-390', 'Long-range sniper. Watch for the red laser before the shot.'),
-    ('Big Henchman', 6, 460, '800-1,100', 'Huge, armored, machine-gun wielding and very accurate. Shows up after about 10 minutes at high threat.'),
-    ('Boss Brute', 7, 1500, '3,300-4,500', 'Minigun-toting boss. Only appears after about 20 minutes at very high threat.'),
+    ('Big Henchman', 6, 460, '380-500', 'Huge, armored, machine-gun wielding and very accurate. Shows up after about 10 minutes at high threat, and only one at a time.'),
+    ('Boss Brute', 7, 1500, '3,300-4,500', 'Minigun-toting boss. Only appears after about 20 minutes at very high threat, and only one at a time.'),
 ]
 
 CONTROLS = [
@@ -51,7 +51,7 @@ CONTROLS = [
     ('R', 'Reload'), ('V', 'Switch fire mode on select-fire guns'), ('1-9 / mouse wheel', 'Switch weapon'),
     ('Q', 'Quick-swap to your last weapon'), ('E or click a SHOP sign', 'Open the Armory (pauses the game)'),
     ('B', 'Build mode: 1-0 (Shift+1-9 for 11-19) / wheel pick, left click place, right click sell'), ('H', 'Quick heal'),
-    ('Z X C F G T Y U', 'Use a specific medical item'), ('M', 'Mute music'), ('Esc', 'Pause / close menus'),
+    ('Z X C F G T Y U', 'Use a specific medical item'), ('J K L I O', 'More medical items (the P Defibrillator works by itself)'), ('M', 'Mute music'), ('Esc', 'Pause / close menus'),
 ]
 
 
@@ -115,7 +115,8 @@ def build():
     for line in [
         'Everything is expensive on purpose: cheap pistols cost a few hundred dollars, good rifles tens of thousands, miniguns hundreds of thousands '
         'and futuristic weapons millions. <b>Laser swords start at $10,000,000</b> &mdash; they take serious grinding.',
-        'Medical supplies are cheap and drop often: about half of all kills leave something to heal with, and gauze and bandages lie around the map.',
+        'Medical supplies are cheap and drop often: about half of all kills leave something to heal with, and gauze, bandages, energy bars and splints lie around the map. '
+        'Carry a <b>Defibrillator</b> (up to 3) and it revives you automatically when you go down.',
         'Every kill drops cash. <b>Headshots</b> pay 25% more, a <b>combo</b> (kills within 3.5 s of each other) adds +10% per link, '
         'and bounties climb steeply with the <b>threat level</b>: about double at threat 5 and five times at threat 10.',
         'Free loot is scattered everywhere, but it is mostly small change. Gold bars and briefcases are rare jackpots.',
@@ -159,6 +160,11 @@ def build():
         'in the shop are used first; otherwise the price comes out of your wallet. Right-click a structure to sell it back for half its value. '
         'Solid walls block enemies and their bullets, but your own shots pass straight through. You can stand on top of walls and watchtowers. '
         'Enemies will shoot and smash barricades that block their way, and they target turrets and Money Printers first.', BODY))
+    story.append(Paragraph(
+        '<b>Stacking:</b> build a wall on top of the same kind of wall and the two merge into one taller, tougher wall. Sandbags, crates, '
+        'wooden, steel, bunker and blast walls, concrete barriers and energy shields all stack (up to 420 pixels high). Turrets, med stations '
+        'and printers can sit on top of a wall that is wide enough. Right-click a stack to take its top block off. If a wall is destroyed, '
+        'whatever stood on it drops down.', BODY))
     story.append(table([['Structure', 'Type', 'HP', 'Price', 'What it does']] +
                        [[b['name'], 'Turret' if b.get('turret') else ('Wall' if b['solid'] else 'Trap / utility'), '{:,}'.format(b['hp']), money(b['price']), Paragraph(escape(b['desc']), CELL)] for b in CAT['build']],
                        [1.6 * inch, 0.9 * inch, 0.6 * inch, 0.8 * inch, 2.9 * inch]))

@@ -35,7 +35,7 @@
       ui.modal('NEW GAME?', 'Starting over replaces your saved progress — weapons, base and cash.', [
         { label: 'Start fresh', primary: true, action: start }, { label: 'Cancel' }]);
     };
-    $('btn-continue').onclick = () => { Z.audio.init(); if (!Z.load()) { ui.modal('SAVE PROBLEM', 'That save could not be loaded. You can start a new game instead.', [{ label: 'OK', primary: true }]); refreshTitle(); } };
+    $('btn-continue').onclick = () => { Z.audio.init(); let ok = false; try { ok = Z.load(); } catch (err) { console.warn('Zoom2D: save could not be loaded', err); } if (!ok) { ui.modal('SAVE PROBLEM', 'That save could not be loaded. You can start a new game instead.', [{ label: 'OK', primary: true }]); refreshTitle(); } };
     // title music starts on the first click or key press (browsers block audio before that)
     const wake = () => { Z.audio.init(); Z.audio.startMusic(); if (G().state === 'title') { Z.audio.targetIntensity = 0; Z.audio.setAmbience(-1); } };
     window.addEventListener('pointerdown', wake, { once: true });
@@ -105,7 +105,7 @@
     ].map(([k, v]) => '<div><small>' + k + '</small><b>' + v + '</b></div>').join('');
     const by = g.player.lastHitBy;
     $('dead-by').textContent = by ? 'Taken down by ' + (/^(a|an|your) /.test(by) ? by : 'a ' + by) : '';
-    $('dead-loss').textContent = 'Respawning costs 10% of your cash (' + fmt(Math.min(g.money * 0.1, 15000)) + '). You keep your weapons, upgrades, perks and base, and enemies ease off for a while.';
+    $('dead-loss').textContent = 'Respawning costs 10% of your cash (' + fmt(Math.min(g.money * 0.1, Z.RESPAWN_CAP)) + '). You keep your weapons, upgrades, perks and base, and enemies ease off for a while.';
     show('dead');
   };
 
@@ -158,7 +158,7 @@
       ['Left click', 'Shoot / swing'], ['Right click (hold)', 'Aim down sights — tighter spread, snipers zoom out'],
       ['R', 'Reload'], ['V', 'Switch fire mode (select-fire guns)'], ['1 – 9 / mouse wheel', 'Switch weapon'], ['Q', 'Quick-swap to last weapon'],
       ['E or click the sign', 'Open the shop (pauses the game)'], ['B', 'Build mode (place barricades, traps, turrets)'],
-      ['H', 'Quick heal (best med for your HP)'], ['Z X C F G T Y U', 'Use a specific medical item'], ['M', 'Mute music'], ['Esc', 'Pause / close menus']
+      ['H', 'Quick heal (best med for your HP)'], ['Z X C F G T Y U', 'Use a specific medical item'], ['J K L I O', 'More medical items (the Defibrillator works by itself)'], ['M', 'Mute music'], ['Esc', 'Pause / close menus']
     ];
     const foes = Object.values(Z.ETYPES).map(e => '<div class="foe"><b>' + e.name + '</b><span>Tier ' + e.tier + ' · ' + e.hp + ' HP · $' + e.reward[0] + '–' + e.reward[1] + '</span></div>').join('');
     $('help-body').innerHTML =
@@ -169,6 +169,8 @@
       '<li>Spend it at <b>SHOP</b> signs: ' + Z.WEAPONS.length + ' weapons grouped by type (Semi-Auto, Full-Auto, Manual Action, Machine Guns, Explosives, Melee, Futuristic) and sorted by price, plus upgrades, armor, meds, barricades and training.</li>' +
       '<li>Everything is expensive on purpose. Futuristic gear costs millions and <b>laser swords start at $10,000,000</b> — build Money Printers, Gold Printers and Crypto Mining Rigs, and push the threat level up (bounties grow fast) to afford them.</li>' +
       '<li>Every ~3 minutes a <b>RAID</b> hits: a big wave that marches straight at you. Build walls, traps and turrets to hold the line.</li>' +
+      '<li><b>Stack your walls:</b> build a wall on top of the same kind of wall and they merge into one taller wall (right-click takes the top block off). Turrets, med stations and printers can sit on top of walls too.</li>' +
+      '<li>Carry a <b>Defibrillator</b> and it revives you automatically when you go down.</li>' +
       '<li>Laser swords deflect bullets back at enemies. Snipers zoom out when you aim. Tactical guns have laser sights.</li>' +
       '<li>The game autosaves every 30 seconds and whenever you close the shop.</li></ul>' +
       '<h3>Enemies</h3><div class="foes">' + foes + '</div></div></div>';
