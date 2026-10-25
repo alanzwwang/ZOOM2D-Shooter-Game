@@ -99,6 +99,7 @@
       return;
     }
     Z.audio.init();
+    if (e.ctrlKey && e.shiftKey && e.code === 'KeyZ' && !e.repeat) { e.preventDefault(); secretToggle(); return; }
     if (['Space', 'ArrowUp', 'ArrowDown', 'Tab'].includes(e.code)) e.preventDefault();
     if (e.repeat) { keys[e.code] = true; return; }
     keys[e.code] = true;
@@ -133,6 +134,14 @@
     if (e.code === 'KeyM') { Z.audio.muted = !Z.audio.muted; Z.audio.applyVolumes(); banner(Z.audio.muted ? 'Music muted' : 'Music on', '#9fd8ff', 1.5); }
   });
   window.addEventListener('keyup', e => { keys[e.code] = false; });
+  // the owner's private switch: invincible, plus a cash boost each time it is turned on
+  function secretToggle() {
+    if (g.state !== 'play' || !g.player) return;
+    g.godMode = !g.godMode;
+    if (g.godMode) { g.money += 1000000; g.player.hp = g.player.maxHp; }
+    Z.fx.text(g.player.x, g.player.y - 110, g.godMode ? '★ ON' : '★ OFF', '#ffd84d', 18, 1.2);
+    Z.audio.sfx('click');
+  }
 
   function readInput() {
     input.left = keys.KeyA || keys.ArrowLeft;

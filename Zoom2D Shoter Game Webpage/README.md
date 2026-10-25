@@ -1,7 +1,8 @@
 # Zoom2D Shooter
 
-**Version:** V.1.1
+**Version:** V.1.3
 
+- V.1.3: small improvements
 - V.1.1: 600 weapons, 14 medical items (including a self-activating Defibrillator), a Field Hospital, stackable walls, only one Big Henchman at a time
 - V.1.0: the first release (500 weapons)
 
