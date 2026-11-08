@@ -207,7 +207,7 @@
 
     hurt(d, srcX, head, blast, src) {
       const g = G();
-      if (this.dead || this.invuln > 0 || g.godMode) return;
+      if (this.dead || this.invuln > 0) return;
       if (src) this.lastHitBy = src;
       const h = this.head && this.headDur > 0 ? Z.ARMOR_BY_ID[this.head] : null;
       if (head) d *= 1 + 0.6 * (1 - (h ? h.head : 0));
